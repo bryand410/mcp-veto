@@ -93,6 +93,28 @@ whole point of binding it.
 - **It does not survive a client that ignores errors.** If your client treats a
   `-32001` as a retry, it will keep asking; that is a client bug, and visible.
 
+## Token Vault
+
+`demo/tokenvault.py` goes one step further than the gate: the agent does not
+hold the third-party token at all. It logs in through Auth0, the GitHub token
+lands in Token Vault, and the agent exchanges its own Auth0 token for it at the
+moment of use.
+
+```
+1. discovery   issuer, endpoints
+2. login       browser -> Auth0 -> GitHub consent -> code on 127.0.0.1
+3. auth0 token code -> Auth0 access token
+4. vault       Auth0 token -> GitHub token
+5. proof       that token really is GitHub's: GET /user
+6. gated write mcp-veto holds the write until a human approves it
+```
+
+Setup is four dashboard steps, written out in [SETUP-TOKENVAULT.md](SETUP-TOKENVAULT.md).
+Status: the script is written and its argument handling is tested; the vault
+exchange has not run against a live tenant yet, because the tenant is an
+account only its owner can create. Step 4 prints the exact error if Token Vault
+is not enabled for the connection.
+
 ## Evidence
 
 Run against `@modelcontextprotocol/server-filesystem@2.2.0` (real npm package,
