@@ -95,25 +95,38 @@ whole point of binding it.
 
 ## Token Vault
 
-`demo/tokenvault.py` goes one step further than the gate: the agent does not
-hold the third-party token at all. It logs in through Auth0, the GitHub token
-lands in Token Vault, and the agent exchanges its own Auth0 token for it at the
-moment of use.
+`demo/tokenvault.py` goes one step further than the gate: the agent never holds
+the third-party token. A GitHub account is linked to the vault through the My
+Account API, and the agent exchanges its own Auth0 refresh token for a GitHub
+token at the moment of use.
 
 ```
-1. discovery   issuer, endpoints
-2. login       browser -> Auth0 -> GitHub consent -> code on 127.0.0.1
-3. auth0 token code -> Auth0 access token
-4. vault       Auth0 token -> GitHub token
-5. proof       that token really is GitHub's: GET /user
-6. gated write mcp-veto holds the write until a human approves it
+1. discovery    issuer, endpoints
+2. login        browser -> Auth0 -> refresh token + My Account API token
+3. connect      My Account API asked to link a GitHub account
+4. consent      browser -> GitHub -> connect_code on 127.0.0.1
+5. complete     Auth0 stores the GitHub tokens in the vault
+6. exchange     refresh token -> GitHub token, out of the vault
+7. proof        that token really is GitHub's: GET /user
+8. gated write  mcp-veto holds the write until a human approves it
 ```
 
-Setup is four dashboard steps, written out in [SETUP-TOKENVAULT.md](SETUP-TOKENVAULT.md).
-Status: the script is written and its argument handling is tested; the vault
-exchange has not run against a live tenant yet, because the tenant is an
-account only its owner can create. Step 4 prints the exact error if Token Vault
-is not enabled for the connection.
+Run against a live tenant and a real GitHub account:
+
+```
+5. connected account: cac_mK5dBHw7wq62GnafcNKTio
+6. GitHub token: 40 chars, scope read:user repo, expires_in 28797
+7. authenticated as: bryand410 (18 public repos)
+8. created: https://github.com/bryand410/mcp-veto/issues/2
+```
+
+The GitHub token exists only in the process that uses it: it is never written to
+disk and never printed.
+
+Setup is written out in [SETUP-TOKENVAULT.md](SETUP-TOKENVAULT.md), with the six
+errors that stood in the way and what each one actually meant.
+`demo/auth0_setup.py` configures the tenant through the Management API instead
+of the dashboard.
 
 ## Evidence
 
